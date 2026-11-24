@@ -1,0 +1,18 @@
+{
+  "flashcards": {
+    "name": "闪卡",
+    "description": "从你的知识图谱生成事实回忆线索，并用 FSRS-6 复习。生成会使用你配置的模型，可能产生费用。仅支持原生模式，不集成 Anki。"
+  },
+  "coding-questions": {
+    "name": "编程题",
+    "description": "带语法高亮的教学问题与编程练习，并使用你已安装的工具自动运行测试。以你的用户权限在本地运行代码，未做沙箱隔离。"
+  },
+  "drawing-pad": {
+    "name": "画板",
+    "description": "在只读的题目参考资料上直接绘制，并把你的解题过程随学习者提交一起发送。"
+  },
+  "rich-code-blocks": {
+    "name": "富代码块",
+    "description": "从 SMILES、ABC 和 TikZ 代码块渲染静态化学结构、乐谱与技术示意图。"
+  }
+}
