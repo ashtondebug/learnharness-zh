@@ -110,19 +110,22 @@ flowchart LR
   B -.跳过.-> I[对象键位置<br/>{"X": …}]
 ```
 
-### 三条必须遵守的护栏
+### 四条必须遵守的护栏
 
-这套补丁踩过三个会导致**应用直接打不开**的坑，脚本里都做了防护：
+这套补丁踩过四个会导致**应用直接打不开**的坑，脚本里都做了防护：
 
 1. **模块导出名不能翻** —— 编译产物里有 `Object.defineProperty(r,"Name",{get:()=>d.Name})` 这种再导出垫片，把 `"Name"` 换成 `"名称"` 会让 `n.Name` 变成 undefined，报 `n.Name is not a constructor`。
-2. **对象键位置不能翻** —— `{"Teaching": Component}`、`map["Open"]` 这类查表键一旦翻掉，组件查不到，报 `Element type is invalid`。
-3. **不能用带原型的字典查表** —— `dict["constructor"]` 会命中 `Object` 构造函数，把代码里的 `"constructor"` 替换成 `function Object() { [native code] }`。脚本用 `Object.create(null)` 规避。
+2. **turbopack 导出表不能翻** —— `x.s(["Chat",()=>Mod])` 与 `(0,registerClientReference)(fn,"module","Chat")` 里的第三个位置是**导出名**，翻了会让客户端组件引用解析成 undefined，表现是**会话页打不开、发不出消息**（`Element type is invalid`）。这是 v0.1.1 修掉的真实事故。
+3. **对象键位置不能翻** —— `{"Teaching": Component}`、`map["Open"]` 这类查表键一旦翻掉，组件查不到，同样报 `Element type is invalid`。
+4. **不能用带原型的字典查表** —— `dict["constructor"]` 会命中 `Object` 构造函数，把代码里的 `"constructor"` 替换成 `function Object() { [native code] }`。脚本用 `Object.create(null)` 规避。
 
 风险短词清单固化在 [dict/risky-keys.json](dict/risky-keys.json)（55 个）。不确定时可用保守模式：
 
 ```bash
 node scripts/apply-zh.mjs --safe   # 只替换含空格的整句，绝不碰单词
 ```
+
+> 护栏 2、3 的判定是**位置式**的：先看字面量被哪个 API 的参数括号包住（导出表 / `registerClientReference` / 对象键），再决定是否替换——所以同一个词（例如 `Chat`）在导出表里保持英文、在界面上仍是「对话」。
 
 ---
 
@@ -163,7 +166,29 @@ docs/images/         截图与对比图
 
 ---
 
+## 更新日志
+
+| 版本 | 日期 | 内容 |
+|---|---|---|
+| v0.1.1 | 2026-11-25 | **修复会话页崩溃**：turbopack 导出表 / `registerClientReference` 的导出名（`Chat`）被误翻，导致已存在的会话打不开、发不出消息（`Element type is invalid`）。新增位置式护栏后复测 11 个页面全部 200、控制台零报错。 |
+| v0.1.0 | 2026-11-24 | 首个版本：882 条词典、补丁脚本、插件清单汉化、4 组对比截图。 |
+
+已安装过 v0.1.0 的用户升级方式：
+
+```bash
+git pull
+node scripts/apply-zh.mjs --restore     # 先还原英文原版
+node scripts/apply-zh.mjs              # 再用新护栏重新汉化
+```
+
+然后退出应用、清缓存、重开。
+
+---
+
 ## 常见问题
+
+**会话页打不开 / 提示 "This page couldn't load" / 发不出消息？**
+这是 v0.1.0 的已知 bug（导出名 `Chat` 被翻译）。按上面的升级步骤用 v0.1.1 重新汉化即可。
 
 **汉化后界面还是英文？**
 Electron 有磁盘缓存。退出应用，删除 `%APPDATA%\LearnHarness\Cache`、`Code Cache`、`GPUCache` 后重启。

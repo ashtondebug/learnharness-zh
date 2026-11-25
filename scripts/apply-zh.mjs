@@ -158,7 +158,17 @@ for (const f of walk(NEXT)) {
       // 保护 1：ES 模块再导出的符号名（Object.defineProperty(r,"X",…)）
       const prefix = out.slice(Math.max(0, offset - 80), offset);
       if (/defineProperty\(\s*[\w$.]+\s*,\s*$/.test(prefix)) { stats.guardExport++; return m; }
-      // 保护 2：对象键位置（{"X": …）不替换
+      // 保护 2/3：turbopack 导出表 `x.s(["Name",()=>Mod])` 与
+      // `(0,b.registerClientReference)(fn,"module","Name")` 里的"导出名"。
+      const back = out.slice(Math.max(0, offset - 800), offset);
+      const rcr = back.lastIndexOf('registerClientReference');
+      if (rcr >= 0 && !back.slice(rcr).includes(';')) { stats.guardExport++; return m; }
+      const prevOpen = out.lastIndexOf('(', offset);
+      if (prevOpen >= 0) {
+        const callee = out.slice(Math.max(0, prevOpen - 48), prevOpen);
+        if (/\.s$/.test(callee) || /registerClientReference\)?$/.test(callee)) { stats.guardExport++; return m; }
+      }
+      // 保护 4：对象键位置（{"X": …）不替换
       let i = offset - 1;
       while (i >= 0 && /\s/.test(out[i])) i--;
       let j = offset + m.length;
